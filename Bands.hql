@@ -54,7 +54,7 @@ CREATE TABLE ${out_schema}.${input}(artist_play STRING,stamp INT,plays INT) ROW 
 load data local inpath '/home/varchambault/${input}.txt' into table ${out_schema}.${input};
 
 
-
+-- SELECT from_unixtime(${input}.stamp, 'yyyy-MM-dd') FROM sum;
 
 -- Merge tables into new super-table!
 
@@ -62,14 +62,14 @@ load data local inpath '/home/varchambault/${input}.txt' into table ${out_schema
 drop table if exists ${out_schema}.${reference}_compare_${input};
 
 CREATE TABLE ${out_schema}.${reference}_compare_${input} as 
-SELECT ${reference}.artist, sum(${input}.plays) as total_plays 
+SELECT ${reference}.artist, from_unixtime(${input}.stamp, 'yyyy-MM-dd'), sum(${input}.plays) as total_plays 
 FROM ${out_schema}.${input} JOIN ${out_schema}.${reference} 
 WHERE (CONCAT("%",${input}.artist_play,"%") RLIKE CONCAT("%",${reference}.artist,"%") 
 	or CONCAT("%",${reference}.artist,"%") RLIKE CONCAT("The ",${input}.artist_play,"%") 
 	or CONCAT("%",${input}.artist_play,"%") RLIKE CONCAT("The ",${reference}.artist,"%") 
 	or CONCAT("%",${reference}.artist,",The%") RLIKE CONCAT("%The ",${input}.artist_play,"%") 
 	or REVERSE(${reference}.artist) RLIKE REVERSE(${input}.artist_play)) 
-GROUP BY ${reference}.artist;
+GROUP BY ${reference}.artist, from_unixtime(${input}.stamp, 'yyyy-MM-dd');
 
 -- Turn on column headers
 
