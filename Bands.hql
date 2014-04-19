@@ -62,7 +62,7 @@ load data local inpath '/home/varchambault/${input}.txt' into table ${out_schema
 drop table if exists ${out_schema}.${reference}_compare_${input};
 
 CREATE TABLE ${out_schema}.${reference}_compare_${input} as 
-SELECT ${reference}.artist, from_unixtime(${input}.stamp, 'yyyy-MM-dd'), sum(${input}.plays) as total_plays 
+SELECT ${reference}.artist, from_unixtime(${input}.stamp, 'yyyy-MM-dd') as todays_date, sum(${input}.plays) as total_plays 
 FROM ${out_schema}.${input} JOIN ${out_schema}.${reference} 
 WHERE (CONCAT("%",${input}.artist_play,"%") RLIKE CONCAT("%",${reference}.artist,"%") 
 	or CONCAT("%",${reference}.artist,"%") RLIKE CONCAT("The ",${input}.artist_play,"%") 
