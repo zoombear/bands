@@ -28,6 +28,23 @@
 -- ALSO: THE FINAL PART OF THE RUN COMMAND SPECIFIES THIS SCRIPT'S FILE PATH. THIS MAY NEED TO BE CHANGED TO A FULL FILEPATH IF THE USER IS NOT RUNNING THE SCRIPT WHILE WITHIN ITS CONTAINING DIRECTORY.
 
 
+-- My SUMMARY OF THE PROBLEM:
+-- This script was very fun to write! The three major components of building it were:
+-- - Allowing the user to bring data into hive for analysis. This involved Creating empty tables within Hive and then populating the tables with the external data from HDFS.
+-- - Analyzing the two tables and joining them based on a name match. This involved finding some way to join the Base Artist list's single artist name column with the Total Plays list with the "mangled" artist name's column. 
+-- - Grouping the matches to find the sum total.
+
+
+-- NAME MATCH METHODOLOGY:
+-- At first I ran the script with a simple RLIKE statement between the two columns. I identified that the standards RLIKE could not identify The Beatles, Foo Fighters, The Doors, and Ben Harper (and all the other incarnations of Ben Harper) properly. Since the instructions specified "Let's assume that the input examples above show all the ways that the name could be mangled..." I systematically went through these cases and customized the join using some groovy regex magic!
+
+-- to address the issues involved misplaced "The"...I used different combinations of the phrase: 
+-- CONCAT("%",${reference}.artist,"%") RLIKE CONCAT("The ",${input}.artist_play,"%")
+-- This way I accounted for all possible cases for "The".
+
+-- The only reminaing issue was the issue of "&"" replacing "And". To solve this I used the REVERSE function so that it could find a match by running through the name strings backwards. This solved the problem of Ben Harper, Ben Harper & The Innocent Criminals, and Ben Harper and the Inoocent Criminals. It distinguished Ben Harper as a solo artist with his band and also allowed both spellings of the band to find a match and participate in the sum calculation!
+
+
 
 -- QUESTIONS:
 -- Is this data in a schema? Which schema?
