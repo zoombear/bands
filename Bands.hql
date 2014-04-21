@@ -136,11 +136,12 @@ drop table if exists ${out_schema}.${reference}_compare_${input};
 CREATE TABLE ${out_schema}.${reference}_compare_${input} as 
 SELECT ${reference}.artist, FROM_UNIXTIME(${input}.stamp, 'yyyy-MM-dd') as todays_date, SUM(${input}.plays) as total_plays 
 FROM ${out_schema}.${input} JOIN ${out_schema}.${reference} 
-WHERE (CONCAT("%",${input}.artist_play,"%") RLIKE CONCAT("%",${reference}.artist,"%") 
-	or CONCAT("%",${reference}.artist,"%") RLIKE CONCAT("The ",${input}.artist_play,"%") 
+WHERE ((${input}.artist_play) = (${reference}.artist) 
+	or (${reference}.artist) RLIKE CONCAT("The ",${input}.artist_play) 
 	or CONCAT("%",${input}.artist_play,"%") RLIKE CONCAT("The ",${reference}.artist,"%") 
-	or CONCAT("%",${reference}.artist,",The%") RLIKE CONCAT("%The ",${input}.artist_play,"%") 
-	or REVERSE(${reference}.artist) RLIKE REVERSE(${input}.artist_play)) 
+	or CONCAT(${reference}.artist,",The%") RLIKE CONCAT("%The ",${input}.artist_play,"%") 
+	or REVERSE(${reference}.artist) RLIKE REVERSE(${input}.artist_play)
+	or (${reference}.artist) rlike regexp_replace(${input}.artist_play, 'and the', '& The')) 
 GROUP BY ${reference}.artist, FROM_UNIXTIME(${input}.stamp, 'yyyy-MM-dd');
 
 -- Turn on column headers
@@ -153,4 +154,5 @@ set hive.cli.print.header=true;
 
 select * from ${out_schema}.${reference}_compare_${input};
 
+!echo 'Output schemas: ${out_schema}.${reference}_compare_${input}'
 !echo 'Process complete...have a great day!'
