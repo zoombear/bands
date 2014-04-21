@@ -50,7 +50,7 @@
 -- CONCAT("%",${reference}.artist,"%") RLIKE CONCAT("The ",${input}.artist_play,"%")
 -- This way I accounted for all possible cases for "The". By experimenting with concatenating "The" before and after both the base artist and the total plays artist names it allowed the tables to find the proper names to match and join on.
 
--- The only reminaing issue was the issue of "&"" replacing "And". To solve this I used the REVERSE function so that it could find a match by running through the name strings backwards. This solved the problem of Ben Harper, Ben Harper & The Innocent Criminals, and Ben Harper and the Inoocent Criminals. It distinguished Ben Harper as a solo artist with his band and also allowed both spellings of the band to find a match and participate in the sum calculation!
+-- The only reminaing issue was the issue of "&"" replacing "And". To solve this I used the REVERSE function so that it could find a match by running through the name strings backwards. This solved the problem of Ben Harper, Ben Harper & The Innocent Criminals, and Ben Harper and the Innocent Criminals. I could not get the code to distinguish separate Ben Harper the soloist fro Ben Harper & the Innocent Criminals bucket...so I had to reevaluate my code.
 
 -- SUCCESSFUL NAME MATCH METHODOLOGY:
 -- After I could not get the RLIKE method to work for each use case, I decided to write one long match regular expression to account for all of the different normalization steps that should work for the name match. I replace all instances of th words "The, the, and, And, &" and commas with nothing. I did this for both the base artist name and the plays_artist names so that they would end up matching. I then added a TRIM function to remove any unnecesary white space. I replaced RLIKE with a basic = expression so names such as "Ben Harper" and "Ben Harper & The Innocent Criminals" would not be combined in the calculation. This allowed for a perfect match across the table tables.
@@ -77,7 +77,7 @@
 
 
 
--- QUESTIONS:
+-- RANDOM QUESTIONS DURING MY PROCESS:
 -- Is this data in a schema? Which schema?
 -- Is the file comma delimited?
 -- Assuming the files are stored in /data/.. folder in HDFS
