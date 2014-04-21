@@ -43,7 +43,7 @@
 -- 3. Grouping the matches to find the sum total.
 
 
--- NAME MATCH METHODOLOGY:
+-- FAILED NAME MATCH METHODOLOGY:
 -- At first I ran the script with a simple RLIKE statement between the two columns. I identified that the standard RLIKE could not identify The Beatles, Foo Fighters, The Doors, and Ben Harper (and all the other incarnations of Ben Harper) properly. Since the instructions specified "Let's assume that the input examples above show all the ways that the name could be mangled..." I systematically went through these cases and customized the join using some groovy regex magic!
 
 -- To address the issues involving oddly placed word "The"...I used different combinations of the phrase: 
@@ -51,6 +51,9 @@
 -- This way I accounted for all possible cases for "The". By experimenting with concatenating "The" before and after both the base artist and the total plays artist names it allowed the tables to find the proper names to match and join on.
 
 -- The only reminaing issue was the issue of "&"" replacing "And". To solve this I used the REVERSE function so that it could find a match by running through the name strings backwards. This solved the problem of Ben Harper, Ben Harper & The Innocent Criminals, and Ben Harper and the Inoocent Criminals. It distinguished Ben Harper as a solo artist with his band and also allowed both spellings of the band to find a match and participate in the sum calculation!
+
+-- SUCCESSFUL NAME MATCH METHODOLOGY:
+-- After I could not get the RLIKE method to work for each use case, I decided to write one long match regular expression to account for all of the different normalization steps that should work for the name match. I replace all instances of th words "The, the, and, And, &" and commas with nothing. I did this for both the base artist name and the plays_artist names so that they would end up matching. I then added a TRIM function to remove any unnecesary white space. I replaced RLIKE with a basic = expression so names such as "Ben Harper" and "Ben Harper & The Innocent Criminals" would not be combined in the calculation. This allowed for a perfect match across the table tables.
 
 -- ODD CASES:
 -- Ke$ha changed her name to Kesha. That would be very difficult to match up in a join! Although if we knew beforehanf that we would need to account for that we could use a REGEX_REPLACE in the artist plays table before the merge to replace all instances of Ke$ha with Kesha (or vice-versa) to ensure these special cases of odd spelling are dealt with before the join attempt.
@@ -67,6 +70,9 @@
 -- I did not need to write a UDF for this script. All functions that were needed are included within the Hive base package.
 
 -- I decided to display the results at the end of the script although this should be removed if the script is used to query larger sets of data/artists. I set the headers to "true" so the display would be neat and pretty. I enjoy a friendly 'echo' message, don't you? :)
+
+-- MAP/REDUCE
+-- Once the base artist names and the plays_list name fields are normalized with the TRIM and REGEXP_REPLACE functions, MapReduce Maps these values into key-value pairs. The base artist list becomes the key since it is the field being grouped on. Each value from the plays_list is then mapped to the key values of the base artist list. Once they are mapped in a one to many fashion, the Reduce step can take place where the calculation of the total number of plays per artist can take place. 
 
 
 
@@ -136,12 +142,7 @@ drop table if exists ${out_schema}.${reference}_compare_${input};
 CREATE TABLE ${out_schema}.${reference}_compare_${input} as 
 SELECT ${reference}.artist, FROM_UNIXTIME(${input}.stamp, 'yyyy-MM-dd') as todays_date, SUM(${input}.plays) as total_plays 
 FROM ${out_schema}.${input} JOIN ${out_schema}.${reference} 
-WHERE ((${input}.artist_play) = (${reference}.artist) 
-	or (${reference}.artist) RLIKE CONCAT("The ",${input}.artist_play) 
-	or CONCAT("%",${input}.artist_play,"%") RLIKE CONCAT("The ",${reference}.artist,"%") 
-	or CONCAT(${reference}.artist,",The%") RLIKE CONCAT("%The ",${input}.artist_play,"%") 
-	or REVERSE(${reference}.artist) RLIKE REVERSE(${input}.artist_play)
-	or (${reference}.artist) rlike regexp_replace(${input}.artist_play, 'and the', '& The')) 
+WHERE (TRIM(regexp_replace(${reference}.artist, '(The|the|,|and|And|&)', '')) = TRIM(regexp_replace(${input}.artist_play,  '(The|the|,|and|And|&)', ''))) 
 GROUP BY ${reference}.artist, FROM_UNIXTIME(${input}.stamp, 'yyyy-MM-dd');
 
 -- Turn on column headers
@@ -154,5 +155,5 @@ set hive.cli.print.header=true;
 
 select * from ${out_schema}.${reference}_compare_${input};
 
-!echo 'Output schemas: ${out_schema}.${reference}_compare_${input}'
+!echo 'You may find the output here: ${out_schema}.${reference}_compare_${input}';
 !echo 'Process complete...have a great day!'
