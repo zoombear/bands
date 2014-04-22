@@ -141,8 +141,19 @@ drop table if exists ${out_schema}.${reference}_compare_${input};
 
 CREATE TABLE ${out_schema}.${reference}_compare_${input} as 
 SELECT ${reference}.artist, FROM_UNIXTIME(${input}.stamp, 'yyyy-MM-dd') as todays_date, SUM(${input}.plays) as total_plays 
-FROM ${out_schema}.${input} JOIN ${out_schema}.${reference} 
-WHERE (TRIM(regexp_replace(${reference}.artist, '(The|the|,|and|And|&)', '')) = TRIM(regexp_replace(${input}.artist_play,  '(The|the|,|and|And|&)', ''))) 
+FROM ${out_schema}.${input} 
+JOIN ${out_schema}.${reference} 
+WHERE (
+  trim(
+    regexp_replace(
+       ${reference}.artist,
+       '(The|the|,|and|And|&)',
+       '')) = 
+  trim(
+    regexp_replace(
+       ${input}.artist_play,
+       '(The|the|,|and|And|&)',
+                  '')))
 GROUP BY ${reference}.artist, FROM_UNIXTIME(${input}.stamp, 'yyyy-MM-dd');
 
 -- Turn on column headers
